@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <meta charset="utf-8" />
+        <title></title>
+    </head>
+
+    <body>
+        <div id="trade-view">
+        </div>
+        <script src="./charting_library/charting_library.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="./js/dataUpdater.js" type="text/javascript" charset="utf-8"></script>
+        <script src="./js/datafees.js" type="text/javascript" charset="utf-8"></script>
+        <script src="./js/socket.js" type="text/javascript" charset="utf-8"></script>
+        <script src="./js/TVjsApi.js" type="text/javascript" charset="utf-8"></script>
+        <script>
+            var _TVjsApi = new TVjsApi('btcusdt');
+            _TVjsApi.init()
+            function format(time){
+                if(time){
+                    var date = new Date(time);
+                    var Y = date.getFullYear();
+                    var m = date.getMonth();
+                    var d = date.getDate();
+                    var h = date.getHours();
+                    var i = date.getMinutes();
+                    var s = date.getSeconds();
+                    return Y+'-'+format2(m)+'-'+format2(d)+' '+format2(h)+':'+format2(i)+':'+format2(s);
+                }
+            }
+            function format2(num){
+                return num < 10 ? '0'+num:num;
+            }
+        </script>
+    </body>
+
+</html>
