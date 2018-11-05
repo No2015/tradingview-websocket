@@ -109,7 +109,7 @@ var TVjsApi = (function(){
                             localStorage.setItem('tradingview.resolution',button.resolution);
                             localStorage.setItem('tradingview.chartType',button.chartType);
                             var $active = this.parentNode.parentNode.querySelector('.active');
-                            $active.className = $active.className.replace('active','');
+                            $active.className = $active.className.replace(/(\sactive|active\s|\sactive\s)/,'');
                             this.parentNode.className += ' active';
                             thats.chart().setResolution(button.resolution, function onReadyCallback() {});
                             if(button.chartType != thats.chart().chartType()){
