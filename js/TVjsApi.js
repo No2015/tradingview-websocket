@@ -4,31 +4,46 @@ var TVjsApi = (function(){
         this.widgets = null;
         this.socket = new socket(urls);
         this.datafeeds = new datafeeds(this);
-        this.symbol = symbol,
-        this.interval = localStorage.getItem('tradingview.resolution') || '5',
-        this.cacheData = {},
-        this.lastTime = null,
-        this.getBarTimer = null,
+        this.symbol = symbol;
+        this.interval = localStorage.getItem('tradingview.resolution') || '5';
+        this.cacheData = {};
+        this.lastTime = null;
+        this.getBarTimer = null;
         this.isLoading = true;
         var that = this;
         this.socket.doOpen()
         this.socket.on('open', function() {
-            that.socket.send({
+            /*that.socket.send({
                 cmd: 'req',
                 args: ["candle.M"+that.interval+"."+symbol, 150, parseInt(Date.now() / 1000)]
-            })
+            })*/
+            if (that.interval < 60) {
+                that.socket.send({
+                    cmd: 'req',
+                    args: ["candle.M"+that.interval+"."+symbol, 150, parseInt(Date.now() / 1000)]
+                })
+            } else if (that.interval >= 60) {
+                that.socket.send({
+                    cmd: 'req',
+                    args: ["candle.H"+(that.interval/60)+"."+symbol, 150, parseInt(Date.now() / 1000)]
+                })
+            } else {
+                that.socket.send({
+                    cmd: 'req',
+                    args: ["candle.D1."+symbol, 150, parseInt(Date.now() / 1000)]
+                })
+            }
         })
         this.socket.on('message', that.onMessage.bind(this))
     }
     TVjsApi.prototype.init = function() {
-        var resolution = localStorage.getItem('tradingview.resolution') || '5';
+        var resolution = this.interval;
         var chartType = (localStorage.getItem('tradingview.chartType') || '1')*1;
 
-        var symbol = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.symbol;//'ethusdt';
-        var interval = arguments.length > 0 && arguments[1] !== undefined ? arguments[1] : resolution;
+        var symbol = this.symbol;
+        var interval = resolution < 60 ? resolution : (resolution >= 60 ? 'H'+resolution/60 : 'D1');
 
-        this.symbol = symbol
-        this.interval = interval
+        console.log('interval',interval)
 
         var locale = 'zh';
 
@@ -53,13 +68,13 @@ var TVjsApi = (function(){
         if (!this.widgets) {
             this.widgets = window.tvWidget = new TradingView.widget({
                 symbol: symbol,
-                interval: interval,
+                interval: resolution,
                 container_id: 'trade-view',
                 datafeed: this.datafeeds,
                 library_path: './charting_library/',                    
                 enabled_features: [],
                 timezone: 'Asia/Shanghai',
-                custom_css_url: './css/tradingview_white.css',
+                custom_css_url: './css/tradingview_'+skin+'.css',
                 locale: locale,
                 debug: false,
                 disabled_features: [
@@ -74,7 +89,7 @@ var TVjsApi = (function(){
                     "header_resolutions",
                 ],
                 //preset: "mobile",
-                overrides: this.getOverrides('white'),
+                overrides: this.getOverrides(skin),
                 studies_overrides: theme[skin].studies_overrides
             })
 
@@ -166,7 +181,7 @@ var TVjsApi = (function(){
         } else {
             this.sendMessage({
                 cmd: 'unsub',
-                args: ["candle.D" + this.interval + "." + this.symbol.toLowerCase()]
+                args: ["candle.D1." + this.symbol.toLowerCase()]
             })
         }
     }
@@ -184,7 +199,7 @@ var TVjsApi = (function(){
         } else {
             this.sendMessage({
                 cmd: 'sub',
-                args: ["candle.D" + this.interval + "." + this.symbol.toLowerCase()]
+                args: ["candle.D1." + this.symbol.toLowerCase()]
             })
         }
     }
@@ -234,7 +249,7 @@ var TVjsApi = (function(){
         }
     }
     TVjsApi.prototype.getBars = function(symbolInfo, resolution, rangeStartDate, rangeEndDate, onLoadedCallback) {
-        console.log(' >> :', rangeStartDate, rangeEndDate)
+        //console.log(' >> :', rangeStartDate, rangeEndDate)
         if (this.interval !== resolution) {
             this.unSubscribe(this.interval)
             this.interval = resolution
@@ -251,7 +266,7 @@ var TVjsApi = (function(){
             } else {
                 this.sendMessage({
                     cmd: 'req',
-                    args: ["candle.D" + this.interval + "." + this.symbol.toLowerCase(), 800, parseInt(Date.now() / 1000)]
+                    args: ["candle.D1." + this.symbol.toLowerCase(), 800, parseInt(Date.now() / 1000)]
                 })
             }
         }
