@@ -44,26 +44,11 @@ var TVjsApi = (function(){
 
         var locale = 'zh';
 
-        var theme = this.tradingViewTheme = {
-                white: {},
-                black: {}
-            };
         var skin = localStorage.getItem('tradingViewTheme') || 'white';
-        theme.black.studies_overrides = {
-            "volume.volume.color.0": "#fd8b8b",
-            "volume.volume.color.1": "#3cb595",
-            "volume.volume.transparency": 70,
-            "volume.options.showStudyArguments": false
-        };
-        theme.white.studies_overrides = {
-            "volume.volume.color.0": "#eb4d5c", //down
-            "volume.volume.color.1": "#53b987",  //up
-            "volume.volume.transparency": 70,
-            "volume.options.showStudyArguments": false
-        };
+
 
         if (!this.widgets) {
-            this.widgets = window.tvWidget = new TradingView.widget({
+            this.widgets = new TradingView.widget({
                 symbol: symbol,
                 interval: resolution,
                 container_id: 'trade-view',
@@ -87,7 +72,7 @@ var TVjsApi = (function(){
                 ],
                 //preset: "mobile",
                 overrides: this.getOverrides(skin),
-                studies_overrides: theme[skin].studies_overrides
+                studies_overrides: this.getStudiesOverrides(skin)
             })
 
             var thats = this.widgets;
@@ -379,10 +364,33 @@ var TVjsApi = (function(){
             "mainSeriesProperties.areaStyle.priceSource": "close"
         }
     }
+    TVjsApi.prototype.getStudiesOverrides = function(theme){
+        var themes = {
+            "white": {
+                c0: "#eb4d5c",
+                c1: "#53b987",
+                t: 70,
+                v: !1
+            },
+            "black": {
+                c0: "#fd8b8b",
+                c1: "#3cb595",
+                t: 70,
+                v: !1
+            }
+        };
+        var t = themes[theme];
+        return {
+            "volume.volume.color.0": t.c0,
+            "volume.volume.color.1": t.c1,
+            "volume.volume.transparency": t.t,
+            "volume.options.showStudyArguments": t.v
+        }
+    }
     TVjsApi.prototype.resetTheme = function(skin){
-        tvWidget.addCustomCSSFile('./css/tradingview_'+skin+'.css');
-        tvWidget.applyOverrides(this.getOverrides(skin));
-        tvWidget.applyStudiesOverrides(this.tradingViewTheme[skin].studies_overrides);
+        this.widgets.addCustomCSSFile('./css/tradingview_'+skin+'.css');
+        this.widgets.applyOverrides(this.getOverrides(skin));
+        this.widgets.applyStudiesOverrides(this.getStudiesOverrides(skin));
     }
     return TVjsApi;
 })();
