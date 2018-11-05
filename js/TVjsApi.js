@@ -379,5 +379,10 @@ var TVjsApi = (function(){
             "mainSeriesProperties.areaStyle.priceSource": "close"
         }
     }
+    TVjsApi.prototype.resetTheme = function(skin){
+        tvWidget.addCustomCSSFile('./css/tradingview_'+skin+'.css');
+        tvWidget.applyOverrides(this.getOverrides(skin));
+        tvWidget.applyStudiesOverrides(this.tradingViewTheme[skin].studies_overrides);
+    }
     return TVjsApi;
 })();
