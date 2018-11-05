@@ -51,7 +51,7 @@ var TVjsApi = (function(){
                 white: {},
                 black: {}
             };
-        var skin = 'white';
+        var skin = localStorage.getItem('tradingViewTheme') || 'white';
         theme.black.studies_overrides = {
             "volume.volume.color.0": "#fd8b8b",
             "volume.volume.color.1": "#3cb595",
