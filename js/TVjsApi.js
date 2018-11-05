@@ -4,7 +4,7 @@ var TVjsApi = (function(){
         this.widgets = null;
         this.socket = new socket(urls);
         this.datafeeds = new datafeeds(this);
-        this.symbol = symbol;
+        this.symbol = symbol || 'ethusdt';
         this.interval = localStorage.getItem('tradingview.resolution') || '5';
         this.cacheData = {};
         this.lastTime = null;
@@ -41,9 +41,6 @@ var TVjsApi = (function(){
         var chartType = (localStorage.getItem('tradingview.chartType') || '1')*1;
 
         var symbol = this.symbol;
-        var interval = resolution < 60 ? resolution : (resolution >= 60 ? 'H'+resolution/60 : 'D1');
-
-        console.log('interval',interval)
 
         var locale = 'zh';
 
