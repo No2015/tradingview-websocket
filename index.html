@@ -17,21 +17,6 @@
         <script>
             var _TVjsApi = new TVjsApi('btcusdt');
             _TVjsApi.init()
-            function format(time){
-                if(time){
-                    var date = new Date(time);
-                    var Y = date.getFullYear();
-                    var m = date.getMonth();
-                    var d = date.getDate();
-                    var h = date.getHours();
-                    var i = date.getMinutes();
-                    var s = date.getSeconds();
-                    return Y+'-'+format2(m)+'-'+format2(d)+' '+format2(h)+':'+format2(i)+':'+format2(s);
-                }
-            }
-            function format2(num){
-                return num < 10 ? '0'+num:num;
-            }
         </script>
     </body>
 

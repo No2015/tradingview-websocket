@@ -77,7 +77,6 @@ var datafeeds = function () {
 
 
   datafeeds.prototype.getBars = function getBars(symbolInfo, resolution, rangeStartDate, rangeEndDate, onDataCallback, onErrorCallback) {
-    //console.log('updata',format(rangeStartDate*1000),format(rangeEndDate*1000))
     var onLoadedCallback = function onLoadedCallback(data) {
                 //if(data&&LastLength!=data.length){
                 if(data&&data.length){

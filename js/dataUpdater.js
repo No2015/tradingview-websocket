@@ -67,19 +67,13 @@ var dataUpdater = function () {
     var subscriptionRecord = this.subscribers[listenerGuid];
     if (subscriptionRecord.lastBarTime !== null && lastBar.time < subscriptionRecord.lastBarTime) return;
     var isNewBar = subscriptionRecord.lastBarTime !== null && lastBar.time > subscriptionRecord.lastBarTime;
-    //console.log('subscriptionRecord.lastBarTime',format(subscriptionRecord.lastBarTime))
-    //console.log('lastBar.time',format(lastBar.time))
-    //console.log('isNewBar',isNewBar)
     if (isNewBar) {
-      //console.log('bars',bars)
       if (bars.length < 2) {
         throw new Error('Not enough bars in history for proper pulse update. Need at least 2.');
       }
       var previousBar = bars[bars.length - 2];
       subscriptionRecord.listener(previousBar);
-      //console.log('previousBar.time',format(previousBar.time))
     }
-    //console.log('-------------------------------')
 
     subscriptionRecord.lastBarTime = lastBar.time;
     subscriptionRecord.listener(lastBar);

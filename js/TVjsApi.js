@@ -234,7 +234,7 @@ var TVjsApi = (function(){
         }
     }
     TVjsApi.prototype.getBars = function(symbolInfo, resolution, rangeStartDate, rangeEndDate, onLoadedCallback) {
-        //console.log(' >> :', format(rangeStartDate*1000), format(rangeEndDate*1000))
+        console.log(' >> :', rangeStartDate), rangeEndDate)
         if (this.interval !== resolution) {
             this.unSubscribe(this.interval)
             this.interval = resolution
@@ -261,7 +261,6 @@ var TVjsApi = (function(){
             var newBars = []
             this.cacheData[ticker].forEach(item => {
                 if (item.time >= rangeStartDate * 1000 && item.time <= rangeEndDate * 1000) {
-                    //console.log('item.time',format(item.time))
                     newBars.push(item)
                 }
             })
