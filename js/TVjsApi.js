@@ -234,7 +234,7 @@ var TVjsApi = (function(){
         }
     }
     TVjsApi.prototype.getBars = function(symbolInfo, resolution, rangeStartDate, rangeEndDate, onLoadedCallback) {
-        console.log(' >> :', rangeStartDate), rangeEndDate)
+        console.log(' >> :', rangeStartDate, rangeEndDate)
         if (this.interval !== resolution) {
             this.unSubscribe(this.interval)
             this.interval = resolution
