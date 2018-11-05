@@ -56,10 +56,10 @@ var TVjsApi = (function(){
                 interval: interval,
                 container_id: 'trade-view',
                 datafeed: this.datafeeds,
-                library_path: '/Public/tradingview/charting_library/',                    
+                library_path: './charting_library/',                    
                 enabled_features: [],
                 timezone: 'Asia/Shanghai',
-                custom_css_url: '/Public/tradingview/css/tradingview_white.css',
+                custom_css_url: './css/tradingview_white.css',
                 locale: locale,
                 debug: false,
                 disabled_features: [
