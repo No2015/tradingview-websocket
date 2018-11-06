@@ -277,7 +277,7 @@ var TVjsApi = (function(){
         if(that.interval !== resolution){
             that.unSubscribe(that.interval)
             that.interval = resolution;
-        }    
+        }   
         //获取当前时间段的数据，在onMessage中执行回调onLoadedCallback
         if (that.interval < 60) {
             that.socket.send({
@@ -324,7 +324,7 @@ var TVjsApi = (function(){
             this.cacheData[tickerstate] = !0;
             return false;
         }
-        if(this.cacheData[tickerload] > rangeStartDate){
+        if(!this.cacheData[tickerload] || this.cacheData[tickerload] > rangeStartDate){
             //如果缓存有数据，但是没有当前时间段的数据，更新当前节点时间
             this.cacheData[tickerload] = rangeStartDate;
             //发起请求，从websocket获取当前时间段的数据
