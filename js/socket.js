@@ -90,7 +90,8 @@ var socket = function () {
   socket.prototype.checkHeartbeat = function checkHeartbeat() {
     var data = {
       'cmd': 'ping',
-      'args': [Date.parse(new Date())]
+      'args': [Date.parse(new Date())],
+      'id': '1368'
     };
     this.send(data);
   };

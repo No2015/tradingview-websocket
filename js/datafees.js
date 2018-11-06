@@ -127,7 +127,7 @@ var datafeeds = function () {
     return {
       supports_search: false,
       supports_group_request: false,
-      supported_resolutions: ['1', '5', '15', '30', '60', '240','1D', '5D', '1W', '1M'],
+      supported_resolutions: ['1', '5', '15', '30', '60', '1D', '1W', '1M'],
       supports_marks: true,
       supports_timescale_marks: true,
       supports_time: true

@@ -10,29 +10,29 @@ var TVjsApi = (function(){
         this.lastTime = null;
         this.getBarTimer = null;
         this.isLoading = true;
+        this.initState = !1;
         var that = this;
         this.socket.doOpen()
         this.socket.on('open', function() {
-            /*that.socket.send({
-                cmd: 'req',
-                args: ["candle.M"+that.interval+"."+symbol, 150, parseInt(Date.now() / 1000)]
-            })*/
-            if (that.interval < 60) {
+            /*if (that.interval < 60) {
                 that.socket.send({
                     cmd: 'req',
-                    args: ["candle.M"+that.interval+"."+symbol, 150, parseInt(Date.now() / 1000)]
+                    args: ["candle.M"+that.interval+"."+symbol, 150*4, parseInt(Date.now() / 1000)],
+                    id: '1366'
                 })
             } else if (that.interval >= 60) {
                 that.socket.send({
                     cmd: 'req',
-                    args: ["candle.H"+(that.interval/60)+"."+symbol, 150, parseInt(Date.now() / 1000)]
+                    args: ["candle.H"+(that.interval/60)+"."+symbol, 150*4, parseInt(Date.now() / 1000)],
+                    id: '1366'
                 })
             } else {
                 that.socket.send({
                     cmd: 'req',
-                    args: ["candle.D1."+symbol, 150, parseInt(Date.now() / 1000)]
+                    args: ["candle.D1."+symbol, 150*4, parseInt(Date.now() / 1000)],
+                    id: '1366'
                 })
-            }
+            }*/
         })
         this.socket.on('message', that.onMessage.bind(this))
     }
@@ -49,6 +49,7 @@ var TVjsApi = (function(){
 
         if (!this.widgets) {
             this.widgets = new TradingView.widget({
+                autosize: true,
                 symbol: symbol,
                 interval: resolution,
                 container_id: 'trade-view',
@@ -153,17 +154,17 @@ var TVjsApi = (function(){
         if (interval < 60) {
             this.sendMessage({
                 cmd: 'unsub',
-                args: ["candle.M" + interval + "." + this.symbol.toLowerCase()]
+                args: ["candle.M" + interval + "." + this.symbol.toLowerCase()],
             })
         } else if (interval >= 60) {
             this.sendMessage({
                 cmd: 'unsub',
-                args: ["candle.H" + (interval / 60) + "." + this.symbol.toLowerCase()]
+                args: ["candle.H" + (interval / 60) + "." + this.symbol.toLowerCase()],
             })
         } else {
             this.sendMessage({
                 cmd: 'unsub',
-                args: ["candle.D1." + this.symbol.toLowerCase()]
+                args: ["candle.D1." + this.symbol.toLowerCase()],
             })
         }
     }
@@ -171,17 +172,17 @@ var TVjsApi = (function(){
         if (this.interval < 60) {
             this.sendMessage({
                 cmd: 'sub',
-                args: ["candle.M" + this.interval + "." + this.symbol.toLowerCase()]
+                args: ["candle.M" + this.interval + "." + this.symbol.toLowerCase()],
             })
         } else if (this.interval >= 60) {
             this.sendMessage({
                 cmd: 'sub',
-                args: ["candle.H" + (this.interval / 60) + "." + this.symbol.toLowerCase()]
+                args: ["candle.H" + (this.interval / 60) + "." + this.symbol.toLowerCase()],
             })
         } else {
             this.sendMessage({
                 cmd: 'sub',
-                args: ["candle.D1." + this.symbol.toLowerCase()]
+                args: ["candle.D1." + this.symbol.toLowerCase()],
             })
         }
     }
@@ -203,8 +204,14 @@ var TVjsApi = (function(){
                     volume: element.quote_vol
                 })
             }, that)
-            thats.cacheData[ticker] = list
-            thats.lastTime = list[list.length - 1].time
+            if(thats.cacheData[ticker]){
+                thats.cacheData[ticker] = thats.cacheData[ticker].concat(list);
+                thats.cacheData['onLoadedCallback'](list);
+            }else{
+                thats.cacheData[ticker] = list;
+                thats.cacheData['onLoadedCallback'](thats.cacheData[ticker]);
+            }
+            thats.lastTime = thats.cacheData[ticker][thats.cacheData[ticker].length - 1].time
             thats.subscribe()
         }
         if (data.type && data.type.indexOf(thats.symbol.toLowerCase()) !== -1) {
@@ -230,25 +237,76 @@ var TVjsApi = (function(){
             }
         }
     }
+    TVjsApi.prototype.initMessage = function(limit,rangeEndDate,onLoadedCallback){
+        console.log('初始化')
+        var that = this;
+        that.cacheData['onLoadedCallback'] = onLoadedCallback;
+        var symbol = this.symbol;
+        if (that.interval < 60) {
+            that.socket.send({
+                cmd: 'req',
+                args: ["candle.M"+that.interval+"."+symbol, limit, rangeEndDate],
+                id: 'trade.'+symbol+'#80'
+            })
+        } else if (that.interval >= 60) {
+            that.socket.send({
+                cmd: 'req',
+                args: ["candle.H"+(that.interval/60)+"."+symbol, limit, rangeEndDate],
+                id: 'trade.'+symbol+'#80'
+            })
+        } else {
+            that.socket.send({
+                cmd: 'req',
+                args: ["candle.D1."+symbol, limit, rangeEndDate],
+                id: 'trade.'+symbol+'#80'
+            })
+        }
+    }
+    TVjsApi.prototype.initLimit = function(resolution, rangeStartDate, rangeEndDate){
+        var limit = 0;
+        switch(resolution){
+            case '1D' : limit = Math.ceil((rangeEndDate - rangeStartDate) / 60 / 60 / 24); break;
+            case '1W' : limit = Math.ceil((rangeEndDate - rangeStartDate) / 60 / 60 / 24 / 7); break;
+            case '1M' : limit = Math.ceil((rangeEndDate - rangeStartDate) / 60 / 60 / 24 / 31); break;
+            default : limit = Math.ceil((rangeEndDate - rangeStartDate) / 60 / resolution); break;
+        }
+        return limit;
+    }
     TVjsApi.prototype.getBars = function(symbolInfo, resolution, rangeStartDate, rangeEndDate, onLoadedCallback) {
         //console.log(' >> :', rangeStartDate, rangeEndDate)
+        var _ticker = this.symbol + "-" + resolution;
+        var _tickerload = _ticker + "load";
+        if(!this.cacheData[_ticker] && !this.initState){
+            this.cacheData[_tickerload] = rangeStartDate;
+            this.initMessage(this.initLimit(resolution, rangeStartDate, rangeEndDate),rangeEndDate,onLoadedCallback);
+            this.initState = !0;
+            return false;
+        }
+        if(this.cacheData[_tickerload] > rangeStartDate){
+            this.initMessage(this.initLimit(resolution, rangeStartDate, rangeEndDate),rangeEndDate,onLoadedCallback);
+            return false;
+        }
         if (this.interval !== resolution) {
             this.unSubscribe(this.interval)
             this.interval = resolution
+            this.initState = !1;
             if (resolution < 60) {
                 this.sendMessage({
                     cmd: 'req',
-                    args: ["candle.M" + this.interval + "." + this.symbol.toLowerCase(), 1440, parseInt(Date.now() / 1000)]
+                    args: ["candle.M" + this.interval + "." + this.symbol.toLowerCase(), 1440, parseInt(Date.now() / 1000)],
+                    id: 'trade.'+symbol+'#80'
                 })
             } else if (resolution >= 60) {
                 this.sendMessage({
                     cmd: 'req',
-                    args: ["candle.H" + (this.interval / 60) + "." + this.symbol.toLowerCase(), 1440, parseInt(Date.now() / 1000)]
+                    args: ["candle.H" + (this.interval / 60) + "." + this.symbol.toLowerCase(), 1440, parseInt(Date.now() / 1000)],
+                    id: 'trade.'+symbol+'#80'
                 })
             } else {
                 this.sendMessage({
                     cmd: 'req',
-                    args: ["candle.D1." + this.symbol.toLowerCase(), 800, parseInt(Date.now() / 1000)]
+                    args: ["candle.D1." + this.symbol.toLowerCase(), 800, parseInt(Date.now() / 1000)],
+                    id: 'trade.'+symbol+'#80'
                 })
             }
         }
@@ -391,6 +449,22 @@ var TVjsApi = (function(){
         this.widgets.addCustomCSSFile('./css/tradingview_'+skin+'.css');
         this.widgets.applyOverrides(this.getOverrides(skin));
         this.widgets.applyStudiesOverrides(this.getStudiesOverrides(skin));
+    }
+    TVjsApi.prototype.formatt = function(time){
+        if(isNaN(time)){
+            return time;
+        }
+        var date = new Date(time);
+        var Y = date.getFullYear();
+        var m = this._formatt(date.getMonth());
+        var d = this._formatt(date.getDate());
+        var H = this._formatt(date.getHours());
+        var i = this._formatt(date.getMinutes());
+        var s = this._formatt(date.getSeconds());
+        return Y+'-'+m+'-'+d+' '+H+':'+i+':'+s;
+    }
+    TVjsApi.prototype._formatt = function(num){
+        return num >= 10 ? num : '0'+num;
     }
     return TVjsApi;
 })();
