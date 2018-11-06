@@ -63,8 +63,19 @@ var socket = function () {
     }
   };
 
-  socket.prototype.send = function send(data) {
-    this.socket.send(JSON.stringify(data));
+  socket.prototype.send = function send(data) {    
+    if(this.socket.readyState != 1){
+      console.log('readyState',this.socket.readyState)
+      if(this.socket.readyState == 3){
+        this.doOpen();
+      }
+      setTimeout(function(){
+        this.send(data);
+      }.bind(this),10);
+    }else{
+      this.socket.send(JSON.stringify(data));
+    }
+    
   };
 
   socket.prototype.emit = function emit(data) {
