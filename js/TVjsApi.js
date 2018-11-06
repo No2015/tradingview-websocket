@@ -294,19 +294,19 @@ var TVjsApi = (function(){
                 this.sendMessage({
                     cmd: 'req',
                     args: ["candle.M" + this.interval + "." + this.symbol.toLowerCase(), 1440, parseInt(Date.now() / 1000)],
-                    id: 'trade.'+symbol+'#80'
+                    id: 'trade.'+ this.symbol+'#80'
                 })
             } else if (resolution >= 60) {
                 this.sendMessage({
                     cmd: 'req',
                     args: ["candle.H" + (this.interval / 60) + "." + this.symbol.toLowerCase(), 1440, parseInt(Date.now() / 1000)],
-                    id: 'trade.'+symbol+'#80'
+                    id: 'trade.'+ this.symbol+'#80'
                 })
             } else {
                 this.sendMessage({
                     cmd: 'req',
                     args: ["candle.D1." + this.symbol.toLowerCase(), 800, parseInt(Date.now() / 1000)],
-                    id: 'trade.'+symbol+'#80'
+                    id: 'trade.'+ this.symbol+'#80'
                 })
             }
         }
