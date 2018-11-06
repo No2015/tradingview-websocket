@@ -35,6 +35,7 @@ var TVjsApi = (function(){
             }
         })
         this.socket.on('message', that.onMessage.bind(this))
+        this.socket.on('close', that.onClose.bind(this))
     }
     TVjsApi.prototype.init = function() {
         var resolution = this.interval;
@@ -263,6 +264,10 @@ var TVjsApi = (function(){
             // 通知图表插件，可以开始增量更新的渲染了
             thats.datafeeds.barsUpdater.updateData()
         }
+    }
+    TVjsApi.prototype.onClose = function(){
+        var thats = this;
+        thats.subscribe();
     }
     TVjsApi.prototype.initMessage = function(symbolInfo, resolution, rangeStartDate, rangeEndDate, onLoadedCallback){
         console.log('发起请求，从websocket获取当前时间段的数据');
