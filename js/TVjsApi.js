@@ -210,9 +210,9 @@ var TVjsApi = (function(){
             }else{
                 thats.cacheData[ticker] = list;
                 thats.cacheData['onLoadedCallback'](thats.cacheData[ticker]);
+                thats.subscribe()
             }
-            thats.lastTime = thats.cacheData[ticker][thats.cacheData[ticker].length - 1].time
-            thats.subscribe()
+            thats.lastTime = thats.cacheData[ticker][thats.cacheData[ticker].length - 1].time            
         }
         if (data.type && data.type.indexOf(thats.symbol.toLowerCase()) !== -1) {
             // console.log(' >> sub:', data.type)
