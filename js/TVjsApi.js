@@ -10,29 +10,29 @@ var TVjsApi = (function(){
         this.lastTime = null;
         this.getBarTimer = null;
         this.isLoading = true;
-        this.initState = !1;
         var that = this;
         this.socket.doOpen()
         this.socket.on('open', function() {
-            /*if (that.interval < 60) {
+            //页面初始化的时候，为了快速加载，先请求150条记录
+            if (that.interval < 60) {
                 that.socket.send({
                     cmd: 'req',
-                    args: ["candle.M"+that.interval+"."+symbol, 150*4, parseInt(Date.now() / 1000)],
+                    args: ["candle.M"+that.interval+"."+symbol, 150, parseInt(Date.now() / 1000)],
                     id: '1366'
                 })
             } else if (that.interval >= 60) {
                 that.socket.send({
                     cmd: 'req',
-                    args: ["candle.H"+(that.interval/60)+"."+symbol, 150*4, parseInt(Date.now() / 1000)],
+                    args: ["candle.H"+(that.interval/60)+"."+symbol, 150, parseInt(Date.now() / 1000)],
                     id: '1366'
                 })
             } else {
                 that.socket.send({
                     cmd: 'req',
-                    args: ["candle.D1."+symbol, 150*4, parseInt(Date.now() / 1000)],
+                    args: ["candle.D1."+symbol, 150, parseInt(Date.now() / 1000)],
                     id: '1366'
                 })
-            }*/
+            }
         })
         this.socket.on('message', that.onMessage.bind(this))
     }
@@ -52,7 +52,7 @@ var TVjsApi = (function(){
                 autosize: true,
                 symbol: symbol,
                 interval: resolution,
-                container_id: 'trade-view',
+                container_id: 'tv_chart_container',
                 datafeed: this.datafeeds,
                 library_path: './charting_library/',                    
                 enabled_features: [],
@@ -151,6 +151,14 @@ var TVjsApi = (function(){
         }
     }
     TVjsApi.prototype.unSubscribe = function(interval) {
+        var thats = this;
+        //停止订阅，删除过期缓存、缓存时间、缓存状态
+        var ticker = thats.symbol + "-" + interval;
+        var tickerload = ticker + "load";
+        var tickerstate = ticker + "state";
+        delete thats.cacheData[ticker];
+        delete thats.cacheData[tickerload];
+        delete thats.cacheData[tickerstate];
         if (interval < 60) {
             this.sendMessage({
                 cmd: 'unsub',
@@ -191,33 +199,46 @@ var TVjsApi = (function(){
         //  console.log("这是后台返回的数据"+count+"："+JSON.stringify(data) )
         
         if (data.data && data.data.length) {
+            //websocket返回的值，数组代表时间段历史数据，不是增量
             var list = []
             var ticker = thats.symbol + "-" + thats.interval;
-            var that = thats;
+            var tickerstate = ticker + "state";
+            
+            //var that = thats;
+            //遍历数组，构造缓存数据
             data.data.forEach(function(element) {
                 list.push({
-                    time: that.interval !== 'D' || that.interval !== '1D' ? element.id * 1000 : element.id,
+                    time: element.id*1000,
                     open: element.open,
                     high: element.high,
                     low: element.low,
                     close: element.close,
                     volume: element.quote_vol
                 })
-            }, that)
-            if(thats.cacheData[ticker]){
-                thats.cacheData[ticker] = thats.cacheData[ticker].concat(list);
+            }, thats)
+            //如果没有缓存数据，则直接填充，发起订阅
+            if(!thats.cacheData[ticker]){
+                /*thats.cacheData[ticker] = thats.cacheData[ticker].concat(list);
                 thats.cacheData['onLoadedCallback'](list);
-            }else{
+            }else{*/
                 thats.cacheData[ticker] = list;
-                thats.cacheData['onLoadedCallback'](thats.cacheData[ticker]);
                 thats.subscribe()
             }
+            //新数据即当前时间段需要的数据，直接喂给图表插件
+            if(thats.cacheData['onLoadedCallback']){
+                thats.cacheData['onLoadedCallback'](list);
+            }
+            //请求完成，设置状态为false
+            thats.cacheData[tickerstate] = !1;
+            //记录当前缓存时间，即数组最后一位的时间
             thats.lastTime = thats.cacheData[ticker][thats.cacheData[ticker].length - 1].time            
         }
         if (data.type && data.type.indexOf(thats.symbol.toLowerCase()) !== -1) {
             // console.log(' >> sub:', data.type)
-            thats.datafeeds.barsUpdater.updateData()
+            // data带有type，即返回的是订阅数据，
+            //缓存的key
             var ticker = thats.symbol + "-" + thats.interval;
+            //构造增量更新数据
             var barsData = {
                 time: data.id * 1000,
                 open: data.open,
@@ -229,36 +250,52 @@ var TVjsApi = (function(){
             /*if (barsData.time >= thats.lastTime && thats.cacheData[ticker] && thats.cacheData[ticker].length) {
                 thats.cacheData[ticker][thats.cacheData[ticker].length - 1] = barsData
             }*/
+            //如果增量更新数据的时间大于缓存时间，而且川村有数据，数据长度大于0
             if (barsData.time > thats.lastTime && thats.cacheData[ticker] && thats.cacheData[ticker].length) {
+                //增量更新的数据直接加入缓存数组
                 thats.cacheData[ticker].push(barsData)
+                //修改缓存时间
                 thats.lastTime = barsData.time
-            }else if(barsData.time == thats.lastTime){
+            }else if(barsData.time == thats.lastTime && thats.cacheData[ticker].length){
+                //如果增量更新的时间等于缓存时间，即在当前时间颗粒内产生了新数据，更新当前数据
                 thats.cacheData[ticker][thats.cacheData[ticker].length - 1] = barsData
             }
+            // 通知图表插件，可以开始增量更新的渲染了
+            thats.datafeeds.barsUpdater.updateData()
         }
     }
-    TVjsApi.prototype.initMessage = function(limit,rangeEndDate,onLoadedCallback){
-        console.log('初始化')
+    TVjsApi.prototype.initMessage = function(symbolInfo, resolution, rangeStartDate, rangeEndDate, onLoadedCallback){
+        console.log('发起请求，从websocket获取当前时间段的数据');
         var that = this;
+        //保留当前回调
         that.cacheData['onLoadedCallback'] = onLoadedCallback;
-        var symbol = this.symbol;
+        //获取需要请求的数据数目
+        var limit = that.initLimit(resolution, rangeStartDate, rangeEndDate);
+        //商品名
+        var symbol = that.symbol;
+        //如果当前时间节点已经改变，停止上一个时间节点的订阅，修改时间节点值
+        if(that.interval !== resolution){
+            that.unSubscribe(that.interval)
+            that.interval = resolution;
+        }    
+        //获取当前时间段的数据，在onMessage中执行回调onLoadedCallback
         if (that.interval < 60) {
             that.socket.send({
                 cmd: 'req',
-                args: ["candle.M"+that.interval+"."+symbol, limit, rangeEndDate],
-                id: 'trade.'+symbol+'#80'
+                args: ["candle.M"+resolution+"."+symbol, limit, rangeEndDate],
+                id: 'trade.M'+ resolution +'.'+ symbol.toLowerCase()
             })
         } else if (that.interval >= 60) {
             that.socket.send({
                 cmd: 'req',
-                args: ["candle.H"+(that.interval/60)+"."+symbol, limit, rangeEndDate],
-                id: 'trade.'+symbol+'#80'
+                args: ["candle.H"+(resolution/60)+"."+symbol, limit, rangeEndDate],
+                id: 'trade.H'+ (resolution / 60) +'.'+ symbol.toLowerCase()
             })
         } else {
             that.socket.send({
                 cmd: 'req',
                 args: ["candle.D1."+symbol, limit, rangeEndDate],
-                id: 'trade.'+symbol+'#80'
+                id: 'trade.D1.'+ symbol.toLowerCase()
             })
         }
     }
@@ -274,43 +311,33 @@ var TVjsApi = (function(){
     }
     TVjsApi.prototype.getBars = function(symbolInfo, resolution, rangeStartDate, rangeEndDate, onLoadedCallback) {
         //console.log(' >> :', rangeStartDate, rangeEndDate)
-        var _ticker = this.symbol + "-" + resolution;
-        var _tickerload = _ticker + "load";
-        if(!this.cacheData[_ticker] && !this.initState){
-            this.cacheData[_tickerload] = rangeStartDate;
-            this.initMessage(this.initLimit(resolution, rangeStartDate, rangeEndDate),rangeEndDate,onLoadedCallback);
-            this.initState = !0;
+        var ticker = this.symbol + "-" + resolution;
+        var tickerload = ticker + "load";
+        var tickerstate = ticker + "state";
+
+        if(!this.cacheData[ticker] && !this.cacheData[tickerstate]){
+            //如果缓存没有数据，而且未发出请求，记录当前节点开始时间
+            this.cacheData[tickerload] = rangeStartDate;
+            //发起请求，从websocket获取当前时间段的数据
+            this.initMessage(symbolInfo, resolution, rangeStartDate, rangeEndDate, onLoadedCallback);
+            //设置状态为true
+            this.cacheData[tickerstate] = !0;
             return false;
         }
-        if(this.cacheData[_tickerload] > rangeStartDate){
-            this.initMessage(this.initLimit(resolution, rangeStartDate, rangeEndDate),rangeEndDate,onLoadedCallback);
+        if(this.cacheData[tickerload] > rangeStartDate){
+            //如果缓存有数据，但是没有当前时间段的数据，更新当前节点时间
+            this.cacheData[tickerload] = rangeStartDate;
+            //发起请求，从websocket获取当前时间段的数据
+            this.initMessage(symbolInfo, resolution, rangeStartDate, rangeEndDate, onLoadedCallback);
+            //设置状态为true
+            this.cacheData[tickerstate] = !0;
             return false;
         }
-        if (this.interval !== resolution) {
-            this.unSubscribe(this.interval)
-            this.interval = resolution
-            this.initState = !1;
-            if (resolution < 60) {
-                this.sendMessage({
-                    cmd: 'req',
-                    args: ["candle.M" + this.interval + "." + this.symbol.toLowerCase(), 1440, parseInt(Date.now() / 1000)],
-                    id: 'trade.'+ this.symbol+'#80'
-                })
-            } else if (resolution >= 60) {
-                this.sendMessage({
-                    cmd: 'req',
-                    args: ["candle.H" + (this.interval / 60) + "." + this.symbol.toLowerCase(), 1440, parseInt(Date.now() / 1000)],
-                    id: 'trade.'+ this.symbol+'#80'
-                })
-            } else {
-                this.sendMessage({
-                    cmd: 'req',
-                    args: ["candle.D1." + this.symbol.toLowerCase(), 800, parseInt(Date.now() / 1000)],
-                    id: 'trade.'+ this.symbol+'#80'
-                })
-            }
+        if(this.cacheData[tickerstate]){
+            //正在从websocket获取数据，禁止一切操作
+            return false;
         }
-        var ticker = this.symbol + "-" + this.interval
+        ticker = this.symbol + "-" + this.interval;
         if (this.cacheData[ticker] && this.cacheData[ticker].length) {
             this.isLoading = false
             var newBars = []
