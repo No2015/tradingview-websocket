@@ -263,7 +263,7 @@ var TVjsApi = (function(){
             }
             // 通知图表插件，可以开始增量更新的渲染了
             thats.datafeeds.barsUpdater.updateData()
-        }else if(data.status){
+        }else if(data.status && thats.cacheData['onLoadedCallback']){
             //没有数据
             thats.cacheData['onLoadedCallback']([]);
         }
