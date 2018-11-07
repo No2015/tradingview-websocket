@@ -155,25 +155,27 @@ var TVjsApi = (function(){
         var thats = this;
         //停止订阅，删除过期缓存、缓存时间、缓存状态
         var ticker = thats.symbol + "-" + interval;
-        var tickerload = ticker + "load";
+        var tickertime = ticker + "load";
         var tickerstate = ticker + "state";
+        var tickerCallback = ticker + "Callback";
         delete thats.cacheData[ticker];
-        delete thats.cacheData[tickerload];
+        delete thats.cacheData[tickertime];
         delete thats.cacheData[tickerstate];
+        delete thats.cacheData[tickerCallback];
         if (interval < 60) {
             this.sendMessage({
                 cmd: 'unsub',
-                args: ["candle.M" + interval + "." + this.symbol.toLowerCase()],
+                args: ["candle.M" + interval + "." + this.symbol.toLowerCase()]
             })
         } else if (interval >= 60) {
             this.sendMessage({
                 cmd: 'unsub',
-                args: ["candle.H" + (interval / 60) + "." + this.symbol.toLowerCase()],
+                args: ["candle.H" + (interval / 60) + "." + this.symbol.toLowerCase()]
             })
         } else {
             this.sendMessage({
                 cmd: 'unsub',
-                args: ["candle.D1." + this.symbol.toLowerCase()],
+                args: ["candle.D1." + this.symbol.toLowerCase()]
             })
         }
     }
@@ -197,6 +199,10 @@ var TVjsApi = (function(){
     }
     TVjsApi.prototype.onMessage = function(data) {
         var thats = this;
+        //通知app
+        if(thats.trade.update){
+            thats.trade.update(data);
+        }
         //  console.log("这是后台返回的数据"+count+"："+JSON.stringify(data) )
         
         if (data.data && data.data.length) {
@@ -204,6 +210,8 @@ var TVjsApi = (function(){
             var list = []
             var ticker = thats.symbol + "-" + thats.interval;
             var tickerstate = ticker + "state";
+            var tickerCallback = ticker + "Callback";
+            var onLoadedCallback = thats.cacheData[tickerCallback];
             
             //var that = thats;
             //遍历数组，构造缓存数据
@@ -226,8 +234,9 @@ var TVjsApi = (function(){
                 thats.subscribe()
             }
             //新数据即当前时间段需要的数据，直接喂给图表插件
-            if(thats.cacheData['onLoadedCallback']){
-                thats.cacheData['onLoadedCallback'](list);
+            if(onLoadedCallback){
+                onLoadedCallback(list);
+                delete thats.cacheData[tickerCallback];
             }
             //请求完成，设置状态为false
             thats.cacheData[tickerstate] = !1;
@@ -235,7 +244,8 @@ var TVjsApi = (function(){
             thats.lastTime = thats.cacheData[ticker][thats.cacheData[ticker].length - 1].time            
         }
         if (data.type && data.type.indexOf(thats.symbol.toLowerCase()) !== -1) {
-            // console.log(' >> sub:', data.type)
+            //console.log(' >> sub:', data.type)
+            //console.log(' >> interval:', thats.interval)
             // data带有type，即返回的是订阅数据，
             //缓存的key
             var ticker = thats.symbol + "-" + thats.interval;
@@ -251,21 +261,26 @@ var TVjsApi = (function(){
             /*if (barsData.time >= thats.lastTime && thats.cacheData[ticker] && thats.cacheData[ticker].length) {
                 thats.cacheData[ticker][thats.cacheData[ticker].length - 1] = barsData
             }*/
-            //如果增量更新数据的时间大于缓存时间，而且川村有数据，数据长度大于0
+            //如果增量更新数据的时间大于缓存时间，而且缓存有数据，数据长度大于0
             if (barsData.time > thats.lastTime && thats.cacheData[ticker] && thats.cacheData[ticker].length) {
                 //增量更新的数据直接加入缓存数组
                 thats.cacheData[ticker].push(barsData)
                 //修改缓存时间
                 thats.lastTime = barsData.time
-            }else if(barsData.time == thats.lastTime && thats.cacheData[ticker].length){
+            }else if(barsData.time == thats.lastTime && thats.cacheData[ticker] && thats.cacheData[ticker].length){
                 //如果增量更新的时间等于缓存时间，即在当前时间颗粒内产生了新数据，更新当前数据
                 thats.cacheData[ticker][thats.cacheData[ticker].length - 1] = barsData
             }
             // 通知图表插件，可以开始增量更新的渲染了
             thats.datafeeds.barsUpdater.updateData()
-        }else if(data.status && thats.cacheData['onLoadedCallback']){
-            //没有数据
-            thats.cacheData['onLoadedCallback']([]);
+        }else if(data.status){
+            var ticker = thats.symbol + "-" + thats.interval;
+            var tickerCallback = ticker + "Callback";
+            var onLoadedCallback = thats.cacheData[tickerCallback];
+            if(onLoadedCallback){
+                onLoadedCallback([]);
+                delete thats.cacheData[tickerCallback];
+            }
         }
     }
     TVjsApi.prototype.onClose = function(){
@@ -278,10 +293,11 @@ var TVjsApi = (function(){
         });
     }
     TVjsApi.prototype.initMessage = function(symbolInfo, resolution, rangeStartDate, rangeEndDate, onLoadedCallback){
-        console.log('发起请求，从websocket获取当前时间段的数据');
+        //console.log('发起请求，从websocket获取当前时间段的数据');
         var that = this;
         //保留当前回调
-        that.cacheData['onLoadedCallback'] = onLoadedCallback;
+        var tickerCallback = this.symbol + "-" + resolution + "Callback";
+        that.cacheData[tickerCallback] = onLoadedCallback;
         //获取需要请求的数据数目
         var limit = that.initLimit(resolution, rangeStartDate, rangeEndDate);
         //商品名
@@ -290,7 +306,7 @@ var TVjsApi = (function(){
         if(that.interval !== resolution){
             that.unSubscribe(that.interval)
             that.interval = resolution;
-        }   
+        }    
         //获取当前时间段的数据，在onMessage中执行回调onLoadedCallback
         if (that.interval < 60) {
             that.socket.send({
