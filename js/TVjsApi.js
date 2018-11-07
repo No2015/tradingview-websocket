@@ -263,11 +263,19 @@ var TVjsApi = (function(){
             }
             // 通知图表插件，可以开始增量更新的渲染了
             thats.datafeeds.barsUpdater.updateData()
+        }else if(data.status){
+            //没有数据
+            thats.cacheData['onLoadedCallback']([]);
         }
     }
     TVjsApi.prototype.onClose = function(){
         var thats = this;
-        thats.subscribe();
+        console.log(' >> : 连接已断开... 正在重连')
+        thats.socket.doOpen()
+        thats.socket.on('open', function() {
+            console.log(' >> : 已重连')
+            thats.subscribe()
+        });
     }
     TVjsApi.prototype.initMessage = function(symbolInfo, resolution, rangeStartDate, rangeEndDate, onLoadedCallback){
         console.log('发起请求，从websocket获取当前时间段的数据');
