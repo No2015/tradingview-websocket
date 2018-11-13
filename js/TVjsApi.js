@@ -200,9 +200,9 @@ var TVjsApi = (function(){
     TVjsApi.prototype.onMessage = function(data) {
         var thats = this;
         //通知app
-        if(thats.trade.update){
+        /*if(thats.trade.update){
             thats.trade.update(data);
-        }
+        }*/
         //  console.log("这是后台返回的数据"+count+"："+JSON.stringify(data) )
         
         if (data.data && data.data.length) {
