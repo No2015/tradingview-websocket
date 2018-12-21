@@ -141,7 +141,7 @@ var datafeeds = function () {
 
   datafeeds.prototype.defaultSymbol = function defaultSymbol() {
     return {
-      'name': 'BTCUSDT',
+      'name': this.self.symbol.toLocaleUpperCase(),
       'timezone': 'Asia/Shanghai',
       'minmov': 1,
       'minmov2': 0,
@@ -155,10 +155,10 @@ var datafeeds = function () {
        "has_daily":true,
        //设置是否支持周月线
        "has_weekly_and_monthly":true,
-      'description': 'BTCUSDT',
+      'description': this.self.symbol.toLocaleUpperCase(),
           //设置精度  100表示保留两位小数   1000三位   10000四位
       'pricescale': 100,
-      'ticker': 'BTCUSDT',
+      'ticker': this.self.symbol.toLocaleUpperCase(),
       'supported_resolutions': ['1', '5', '15', '30', '60', '240','1D', '5D', '1W', '1M']
     };
   };
