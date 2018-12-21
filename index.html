@@ -27,7 +27,6 @@
             var $select = document.querySelector('#symbol-list');
             $select.onchange = function(){
                 var symbol = this.value;
-                var interval = _TVjsApi.widgets.chart().resolution();
                 _TVjsApi.symbol = symbol;
                 _TVjsApi.widgets.chart().setSymbol(symbol.toLocaleUpperCase());
             }
