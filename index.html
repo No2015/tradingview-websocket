@@ -9,6 +9,13 @@
     <body>
         <div id="tv_chart_container" style="height: 530px">
         </div>
+        <div>
+            修改商品: 
+            <select name="" id="symbol-list">
+                <option value="btcusdt">btcusdt</option>
+                <option value="ethusdt">ethusdt</option>
+            </select>
+        </div>
         <script src="./charting_library/charting_library.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="./js/dataUpdater.js" type="text/javascript" charset="utf-8"></script>
         <script src="./js/datafees.js" type="text/javascript" charset="utf-8"></script>
@@ -17,6 +24,13 @@
         <script>
             var _TVjsApi = new TVjsApi('btcusdt');
             _TVjsApi.init();
+            var $select = document.querySelector('#symbol-list');
+            $select.onchange = function(){
+                var symbol = this.value;
+                var interval = _TVjsApi.widgets.chart().resolution();
+                _TVjsApi.symbol = symbol;
+                _TVjsApi.widgets.chart().setSymbol(symbol.toLocaleUpperCase());
+            }
             //_TVjsApi.resetTheme('black') //切换皮肤
         </script>
     </body>
