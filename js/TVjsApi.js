@@ -72,7 +72,7 @@ var TVjsApi = (function(){
                     "volume_force_overlay",
                     "header_resolutions",
                 ],
-                //preset: "mobile",
+                preset: "mobile",
                 overrides: this.getOverrides(skin),
                 studies_overrides: this.getStudiesOverrides(skin)
             })
