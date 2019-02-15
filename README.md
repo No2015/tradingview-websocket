@@ -7,3 +7,5 @@
 修复了原代码的一些bug，主要是数据接收处理的逻辑。另外加了参数配置和皮肤，black和white两个皮肤，皮肤变量skin，可设置。
 
 线上预览 [demo](https://no2015.github.io/tradingview-websocket/index.html)。
+
+数据来源 [www.fcoin.com](https://www.fcoin.com),年前已经被墙，请自备梯子，，，，，，，，，，，，
