@@ -1,6 +1,6 @@
 var TVjsApi = (function(){
     var TVjsApi = function(symbol) {
-        var urls = 'wss://api.fcoin.com/v2/ws';
+        var urls = 'wss://api.fcoin.pro/v2/ws';
         this.widgets = null;
         this.socket = new socket(urls);
         this.datafeeds = new datafeeds(this);
